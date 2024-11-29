@@ -6,8 +6,9 @@ entryPoints:
 
 api:
   dashboard: true
-  insecure: true  
+
+ping: {}
 
 providers:
   docker:
-    exposedByDefault: false  
+    exposedByDefault: false

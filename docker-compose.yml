@@ -89,6 +89,7 @@ services:
       - "traefik.http.routers.api.rule=Host(`traefik.local`)"
       - "traefik.http.routers.api.service=api@internal"
       - "traefik.http.routers.api.middlewares=auth"
+      - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.middlewares.auth.basicauth.users=my_user:$(htpasswd -nb my_user my_password)"
     depends_on:
       - database

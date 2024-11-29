@@ -27,8 +27,7 @@ services:
     environment:
       PMA_HOST: database
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
-    ports:
-      - "8080:80"
+    ports: []
     depends_on:
       - database
     secrets:

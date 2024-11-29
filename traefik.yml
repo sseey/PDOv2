@@ -3,6 +3,8 @@ entryPoints:
     address: ":80"
   websecure:
     address: ":443"
+  traefik:
+    address: ":8080" # Ajout pour exposer l'API sur un port spécifique
 
 api:
   dashboard: true

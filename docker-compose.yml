@@ -19,7 +19,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
 
   phpmyadmin:
     image: phpmyadmin:latest
@@ -27,46 +27,41 @@ services:
     environment:
       PMA_HOST: database
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
-    ports: []
-    depends_on:
-      - database
-    secrets:
-      - db_root_password
-    networks:
-      - app_network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.local`)"
-      - "traefik.http.routers.phpmyadmin.entrypoints=web"
       - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.phpmyadmin-auth.basicauth.users=admin:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/" # admin/password
+      - "traefik.http.routers.phpmyadmin.middlewares=phpmyadmin-auth"
+    networks:
+      - app_network
+    depends_on:
+      - database
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
-
 
   web:
     build:
       context: .
     container_name: projet-devops-web
-    depends_on:
-      - database
-    networks:
-      - app_network
-    secrets:
-      - db_user_password
-      - db_root_password
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.rule=Host(`web.local`)"
-      - "traefik.http.routers.web.entrypoints=web"
       - "traefik.http.services.web.loadbalancer.server.port=80"
       - "traefik.http.middlewares.web-rate-limit.rateLimit.average=20"
       - "traefik.http.middlewares.web-rate-limit.rateLimit.burst=10"
       - "traefik.http.routers.web.middlewares=web-rate-limit"
+    networks:
+      - app_network
+    secrets:
+      - db_user_password
+    depends_on:
+      - database
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://localhost"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -77,32 +72,22 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
       - ./certs:/certs
-    networks:
-      - app_network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`traefik.local`)"
-      - "traefik.http.routers.api.service=api@internal"
-      - "traefik.http.routers.api.middlewares=auth"
-      - "traefik.http.routers.api.entrypoints=web"
-      - "traefik.http.middlewares.auth.basicauth.users=my_user:$(htpasswd -nb my_user my_password)"
-    depends_on:
-      - database
-      - phpmyadmin
-      - web
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - "traefik.http.routers.traefik.rule=Host(`traefik.local`)"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth"
+    networks:
+      - app_network
 
 volumes:
   db_data:
+  traefik-data:
 
 networks:
   app_network:

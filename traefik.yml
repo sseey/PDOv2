@@ -10,6 +10,8 @@ api:
   dashboard: true
   insecure: false
 
+ping: {}
+
 providers:
   docker:
     exposedByDefault: false
@@ -21,6 +23,22 @@ certificatesResolvers:
       storage: /certs/acme.json
       httpChallenge:
         entryPoint: web
+
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: "/certs/traefik.local.crt"
+        keyFile: "/certs/traefik.local.key"
+  certificates:
+    - certFile: "/certs/traefik.local.crt"
+      keyFile: "/certs/traefik.local.key"
+      stores:
+        - default
+      domains:
+        - main: "web.local"
+          sans:
+            - "www.web.local"
 
 middlewares:
   default-rate-limit:

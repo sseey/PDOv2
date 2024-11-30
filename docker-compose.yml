@@ -30,6 +30,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.local`)"
+      - "traefik.http.routers.phpmyadmin.entrypoints=websecure" # HTTPS uniquement
+      - "traefik.http.routers.phpmyadmin.tls=true" # Activer TLS
+      - "traefik.http.routers.phpmyadmin.tls.certresolver=myresolver" # Résolveur TLS
       - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
       - "traefik.http.middlewares.phpmyadmin-auth.basicauth.users=admin:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/" # admin/password
       - "traefik.http.routers.phpmyadmin.middlewares=phpmyadmin-auth"
@@ -50,10 +53,20 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.rule=Host(`web.local`)"
+      - "traefik.http.routers.web.entrypoints=websecure" # HTTPS
+      - "traefik.http.routers.web.tls=true" # Active TLS
+      - "traefik.http.routers.web.tls.domains[0].main=web.local" # Associe le domaine
       - "traefik.http.services.web.loadbalancer.server.port=80"
       - "traefik.http.middlewares.web-rate-limit.rateLimit.average=20"
       - "traefik.http.middlewares.web-rate-limit.rateLimit.burst=10"
       - "traefik.http.routers.web.middlewares=web-rate-limit"
+
+      # Redirection HTTP vers HTTPS
+      - "traefik.http.routers.web-http.rule=Host(`web.local`)"
+      - "traefik.http.routers.web-http.entrypoints=web"
+      - "traefik.http.routers.web-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
     networks:
       - app_network
     secrets:
@@ -72,6 +85,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
@@ -79,11 +93,25 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.local`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure" # HTTPS seulement
+      - "traefik.http.routers.traefik.tls=true" # Activer TLS
+      - "traefik.http.routers.traefik.tls.certresolver=myresolver" # Utiliser un résolveur TLS
+
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$H6uskkkW$$IgXLP6ewTrSuBkTrqE8wj/"
       - "traefik.http.routers.traefik.middlewares=traefik-auth"
     networks:
       - app_network
+    depends_on:
+      - database
+      - phpmyadmin
+      - web
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 
 volumes:
   db_data:

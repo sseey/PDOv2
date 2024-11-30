@@ -50,6 +50,8 @@ services:
     build:
       context: .
     container_name: projet-devops-web
+    volumes:
+      - web_data:/var/www/html
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.rule=Host(`web.local`)"
@@ -89,7 +91,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./certs:/certs
+      - traefik-data:/certs
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.local`)"
@@ -116,6 +119,7 @@ services:
 volumes:
   db_data:
   traefik-data:
+  web_data:
 
 networks:
   app_network:

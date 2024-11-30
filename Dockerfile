@@ -15,8 +15,8 @@ RUN apt-get update && \
     apt-get clean
 
 # Copier les fichiers de la page web dans le répertoire approprié
-COPY index.php /var/www/html/
-COPY background-image.jpg /var/www/html/
+COPY /web_data/index.php /var/www/html/
+COPY /web_data/background-image.jpg /var/www/html/
 
 # Copier le script d'entrée
 COPY entrypoint.sh /entrypoint.sh
